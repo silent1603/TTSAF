@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Environment;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.View;
@@ -11,7 +12,10 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
     String contentVN = "Ở một cái giếng nọ có một con ếch sống lâu năm dưới đáy giếng, xung quanh nó chỉ toàn là những con nhái, ốc, cua bé nhỏ. Ở dưới đáy giếng nhìn lên trời, chú ếch chỉ có thể thấy được một khoảng trời rất bé như cái vung vậy.\n" +
@@ -44,15 +48,27 @@ public class MainActivity extends AppCompatActivity {
         btnStop = (Button) findViewById(R.id.btnStop);
         btnSpeak = (Button) findViewById(R.id.btnSPEAK);
         textviewContent = (TextView) findViewById(R.id.textView);
-
+        Locale vietnamese = new Locale("vi", "VN");
         speak = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
                 if(status != TextToSpeech.ERROR) {
-                    speak.setLanguage(Locale.ENGLISH);
+                    int result = speak.isLanguageAvailable(new Locale("vi", "VN"));
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        String text = "Xin chào, bạn có khỏe không?";
+                        File file = new File(Environment.getExternalStorageDirectory(), "vietnamese_speech.wav");
+                        speak.synthesizeToFile(text, null, file, null);
+                    }
+                    speak.setLanguage(vietnamese);
+
                 }
             }
         });
+
+
+        // Print list of locales to console
+
+
 
         currentLang = "VN";
         btnVN.setEnabled(false);
@@ -68,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         btnEN.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
                 currentLang = "EN";
                 textviewContent.setText(contentEN);
                 btnEN.setEnabled(false);
@@ -77,6 +94,12 @@ public class MainActivity extends AppCompatActivity {
         btnSpeak.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if(currentLang == "VN")
+                {
+                    speak.setLanguage(vietnamese);
+                }else {
+                    speak.setLanguage(Locale.ENGLISH);
+                }
                 CharSequence toSpeak = textviewContent.getText();
                 Toast.makeText(getApplicationContext(), toSpeak,Toast.LENGTH_SHORT).show();
                 speak.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null,currentLang);
@@ -94,5 +117,12 @@ public class MainActivity extends AppCompatActivity {
                 btnStop.setEnabled(false);
             }
         });
+    }
+
+    @Override
+    protected void onStop() {
+
+        super.onStop();
+        speak.shutdown();
     }
 }
